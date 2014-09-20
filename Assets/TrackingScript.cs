@@ -3,7 +3,6 @@ using System.Collections;
 using Leap;
 
 public class TrackingScript : MonoBehaviour {
-
 	Controller controller;
 	public GameObject createdObjects;
 	HandList handList;
@@ -11,26 +10,52 @@ public class TrackingScript : MonoBehaviour {
 	Hand rightHand;
 	bool debug;
 
+	Leap.Vector leftHandPrev;
+	Leap.Vector rightHandPrev;
+
+	Leap.Vector leftDirPrev;
+	Leap.Vector rightDirPrev;
+
 	string navigationState;//pan,rotate,zoom
 	void Start ()
 	{
+		/*leftHandPrev = new Leap.Vector (0, 0, 0);
+		rightHandPrev = new Leap.Vector (0, 0, 0);
+		leftDirPrev = new Leap.Vector (0, 0, 0);
+		rightDirPrev = new Leap.Vector (0, 0, 0);*/
 		controller = new Controller();
 		navigationState = "pan";
 		controller.EnableGesture (Gesture.GestureType.TYPECIRCLE);
 		controller.EnableGesture (Gesture.GestureType.TYPESWIPE);
+		controller.EnableGesture (Gesture.GestureType.TYPEKEYTAP);
+		controller.EnableGesture (Gesture.GestureType.TYPESCREENTAP);
 	}
 	
 	void Update ()
 	{
+		//transform gives you main camera
+		//initialize hand positions
+		/*
+		if (leftHandPrev.Equals( new Leap.Vector(0,0,0))) {
+			leftHandPrev = leftHand.PalmPosition;
+				}
+		if (rightHandPrev.Equals( new Leap.Vector(0,0,0))) {
+			rightHandPrev = rightHand.PalmPosition;
+				}
+		if (leftDirPrev.Equals( new Leap.Vector(0,0,0))) {
+			leftDirPrev = leftHand.Direction;
+				}
+		if (rightDirPrev.Equals( new Leap.Vector(0,0,0))) {
+			rightDirPrev = rightHand.Direction;
+		}
+		print (rightHandPrev);*/
 		Frame frame = controller.Frame();
 		handList = frame.Hands;
 		leftHand = handList.Leftmost;
 		rightHand = handList.Rightmost;
-		//print (leftHand.PalmPosition);
-		//print (facingForward ());
-		//print (facingForward ());
-		print (facingForward ());
-		print (rightHand.Direction.z + " " + leftHand.Direction.z);
+		if (facingForward ()) {
+			print ("forward");
+				}
 		// do something with the tracking data in the frame...
 		foreach (Gesture g in frame.Gestures()){
 			//print (g.Type.ToString());
@@ -43,7 +68,6 @@ public class TrackingScript : MonoBehaviour {
 			}
 			if(g.Type == Gesture.GestureType.TYPESWIPE && g.State==Gesture.GestureState.STATE_STOP){
 				print(((SwipeGesture) g).ToString());
-
 			}
 
 		}
@@ -52,7 +76,8 @@ public class TrackingScript : MonoBehaviour {
 
 	bool facingForward(){
 		return rightHand.Direction.z < -.30 && rightHand.Direction.z > -.80
-			&& leftHand.Direction.z < -.30 && leftHand.Direction.z > -.80;
+			&& leftHand.Direction.z < -.30 && leftHand.Direction.z > -.80
+			&& handList.Count==2;
 		}
 
 
