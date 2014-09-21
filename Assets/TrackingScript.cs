@@ -8,7 +8,8 @@ public class TrackingScript : MonoBehaviour {
 	HandList handList;
 	Hand leftHand;
 	Hand rightHand;
-	bool debug;
+	bool panEnabled;
+
 
 	Leap.Vector leftHandPrev;
 	Leap.Vector rightHandPrev;
@@ -16,15 +17,16 @@ public class TrackingScript : MonoBehaviour {
 	Leap.Vector leftDirPrev;
 	Leap.Vector rightDirPrev;
 
-	string navigationState;//pan,rotate,zoom
 	void Start ()
 	{
-		/*leftHandPrev = new Leap.Vector (0, 0, 0);
+		leftHandPrev = new Leap.Vector (0, 0, 0);
 		rightHandPrev = new Leap.Vector (0, 0, 0);
 		leftDirPrev = new Leap.Vector (0, 0, 0);
-		rightDirPrev = new Leap.Vector (0, 0, 0);*/
+		rightDirPrev = new Leap.Vector (0, 0, 0);
+		leftHand = new Hand ();
+		rightHand = new Hand ();
 		controller = new Controller();
-		navigationState = "pan";
+		panEnabled = true;
 		controller.EnableGesture (Gesture.GestureType.TYPECIRCLE);
 		controller.EnableGesture (Gesture.GestureType.TYPESWIPE);
 		controller.EnableGesture (Gesture.GestureType.TYPEKEYTAP);
@@ -35,28 +37,29 @@ public class TrackingScript : MonoBehaviour {
 	{
 		//transform gives you main camera
 		//initialize hand positions
-		/*
-		if (leftHandPrev.Equals( new Leap.Vector(0,0,0))) {
-			leftHandPrev = leftHand.PalmPosition;
-				}
-		if (rightHandPrev.Equals( new Leap.Vector(0,0,0))) {
-			rightHandPrev = rightHand.PalmPosition;
-				}
-		if (leftDirPrev.Equals( new Leap.Vector(0,0,0))) {
-			leftDirPrev = leftHand.Direction;
-				}
-		if (rightDirPrev.Equals( new Leap.Vector(0,0,0))) {
-			rightDirPrev = rightHand.Direction;
-		}
-		print (rightHandPrev);*/
 		Frame frame = controller.Frame();
 		handList = frame.Hands;
 		leftHand = handList.Leftmost;
 		rightHand = handList.Rightmost;
-		if (facingForward ()) {
-			print ("forward");
+
+		if (!rightFistForward() && !leftFistForward ()) {
+			panEnabled = true;
 				}
-		// do something with the tracking data in the frame...
+		if (rightHandForward() && leftHandForward () && handList.Count==2 && panEnabled) {//both hands facing forward
+			toggleGestures(false);
+			transform.position += (rightHandPrev.x - rightHand.PalmPosition.x) * transform.right * Mathf.Abs(rightHand.PalmVelocity.x) * Time.deltaTime * 1/5;
+			transform.position += (rightHandPrev.y - rightHand.PalmPosition.y) * transform.up * Mathf.Abs(rightHand.PalmVelocity.y) * Time.deltaTime * 1/5;
+		}
+		if (rightFistForward () && leftHandForward () && handList.Count==2) {
+			toggleGestures(false);
+			print ("rotateleft");
+		}
+		if (rightHandForward () && leftFistForward () && handList.Count==2) {
+			toggleGestures(false);
+			print ("rotateleft");
+		}
+
+
 		foreach (Gesture g in frame.Gestures()){
 			//print (g.Type.ToString());
 			if(g.Type == Gesture.GestureType.TYPECIRCLE && g.State==Gesture.GestureState.STATE_STOP){
@@ -67,18 +70,51 @@ public class TrackingScript : MonoBehaviour {
 				newSphere.transform.parent = createdObjects.transform;
 			}
 			if(g.Type == Gesture.GestureType.TYPESWIPE && g.State==Gesture.GestureState.STATE_STOP){
-				print(((SwipeGesture) g).ToString());
+				//g = (SwipeGesture)g;
 			}
 
 		}
+		leftHandPrev = leftHand.PalmPosition;
+		rightHandPrev = rightHand.PalmPosition;
+		leftDirPrev = leftHand.Direction;
+		rightDirPrev = rightHand.Direction;
+	}//eo update
+
+	void toggleGestures(bool enabled){
+		controller.EnableGesture (Gesture.GestureType.TYPECIRCLE,enabled);
+		controller.EnableGesture (Gesture.GestureType.TYPESWIPE, enabled);
+		controller.EnableGesture (Gesture.GestureType.TYPEKEYTAP, enabled);
+		controller.EnableGesture (Gesture.GestureType.TYPESCREENTAP, enabled);
 
 	}
+	bool rightHandForward(){
+		return rightHand.Direction.z < -.30 && rightHand.Direction.z > -.80;
+		}//eorighthandforward
+	bool leftHandForward(){
+		return leftHand.Direction.z < -.30 && leftHand.Direction.z > -.80;
+	}//eolefthandforward
 
-	bool facingForward(){
-		return rightHand.Direction.z < -.30 && rightHand.Direction.z > -.80
-			&& leftHand.Direction.z < -.30 && leftHand.Direction.z > -.80
-			&& handList.Count==2;
+	bool rightFistForward(){
+		panEnabled = false;
+		bool fist = true;
+		foreach(Pointable p in rightHand.Pointables){
+			if(p.IsExtended){
+				fist = false;
+			}
 		}
-
-
+			return rightHand.Direction.z < -.30 && rightHand.Direction.z > -.80
+						&& fist;
+		}//eorightfistforward
+	bool leftFistForward(){
+		panEnabled = false;
+		bool fist = true;
+		foreach(Pointable p in leftHand.Pointables){
+			if(p.IsExtended){
+				fist = false;
+			}
+		}
+		return leftHand.Direction.z < -.30 && leftHand.Direction.z > -.80
+			&& fist;
+	}//eoleftfistforward
+	
 }//eof
