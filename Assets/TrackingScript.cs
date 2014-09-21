@@ -101,8 +101,11 @@ public class TrackingScript : MonoBehaviour {
 					newCube.transform.parent = createdObjects.transform;
 
 				if(rightHandPrev.y < rightHand.PalmPosition.y){
-
+					newCube.transform.localScale += newCube.transform.up * Time.deltaTime * rightHand.PalmVelocity.y * 1/5;
+					newCube.transform.position += newCube.transform.up * Time.deltaTime * rightHand.PalmVelocity.y * 1/5;
 				}else{
+					newCube.transform.localScale += -newCube.transform.up * Time.deltaTime * rightHand.PalmVelocity.y * 1/5;
+					newCube.transform.position += -newCube.transform.up * Time.deltaTime * rightHand.PalmVelocity.y * 1/5;
 				}
 			} else {
 					locked = false;
