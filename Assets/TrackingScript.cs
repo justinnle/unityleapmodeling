@@ -126,17 +126,17 @@ public class TrackingScript : MonoBehaviour {
 					newSphere.AddComponent<Rigidbody> ();
 					newSphere.transform.parent = createdObjects.transform;
 			}
-			if (g.Type == Gesture.GestureType.TYPESWIPE) {
-				print("swipe");
+			if (g.Type == Gesture.GestureType.TYPESWIPE) {/*
 				if(leftPoint () != null){
 					RaycastHit rhInfo = new RaycastHit ();
 					Ray shootRay = new Ray (vectorConvert(rightPoint ().TipPosition),
 					                        vectorConvert(rightPoint ().Direction));
 					if (Physics.Raycast (shootRay, out rhInfo, 400.0f)) {
 						GameObject.Destroy(rhInfo.collider);
+						print ("destroy");
 					}
 				}
-				}
+				*/}
 
 			}
 		//movement
