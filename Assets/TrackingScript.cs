@@ -104,9 +104,11 @@ public class TrackingScript : MonoBehaviour {
 		}
 		//zoom
 		if (rightHandForward () && leftFistForward () && handList.Count==2 && zoomEnabled) {
+			panEnabled = false;
+			rotateEnabled = false;
 			guiText.text = "Zoom Mode";
 			toggleGestures(false);
-			transform.position += (rightHandPrev.x - rightHand.PalmPosition.x) * transform.forward * Mathf.Abs(rightHand.PalmVelocity.x) * Time.deltaTime * 1/5;
+			transform.position += transform.forward * (rightHandPrev.x - rightHand.PalmPosition.x) * Mathf.Abs(rightHand.PalmVelocity.x) * Time.deltaTime * 1/5;
 		}
 		//create/destroy
 		if (leftPoint () != null){
@@ -141,9 +143,30 @@ public class TrackingScript : MonoBehaviour {
 						bang();
 					}
 				}
-
 			}
-		}
+		}//eoleftpoint()
+			if (rightPoint () != null){
+				guiText.text = "Create/Destroy Mode";
+				panEnabled = false;
+				rotateEnabled = false;
+				zoomEnabled = false;
+				if (leftPinch ()) {//vert box creation
+					panEnabled = false;
+					locked = true;
+					GameObject newCube = GameObject.CreatePrimitive (PrimitiveType.Cube);
+					newCube.transform.position = rightTracker;
+					newCube.AddComponent<Collider>();
+					newCube.transform.parent = createdObjects.transform;
+					
+					if(leftHandPrev.x < leftHand.PalmPosition.x){
+						newCube.transform.localScale += newCube.transform.right * Time.deltaTime * leftHand.PalmVelocity.x * 1/5;
+						newCube.transform.position += newCube.transform.right * Time.deltaTime * leftHand.PalmVelocity.x * 1/5;
+					}
+				} else {
+					locked = false;
+				}
+			}
+		
 
 		foreach (Gesture g in frame.Gestures()) {
 			//print (g.Type.ToString());
@@ -174,9 +197,15 @@ public class TrackingScript : MonoBehaviour {
 	}//eo update
 
 	void bang(){
-		if(rightFistForward()){
+		bool fist = true;
+		foreach (Finger f in rightHand.Fingers) {
+			if(f.IsExtended){
+				fist = false;
+			}
+		}
+		if(fist){
 			GameObject.Instantiate (bangParticles, leftTracker+transform.up*1.2f, Quaternion.LookRotation (transform.forward));
-			Collider[] affectInRange = Physics.OverlapSphere (leftTracker, 3.0f);
+			Collider[] affectInRange = Physics.OverlapSphere (leftTracker, 1.0f);
 			for(int ii=0;ii<affectInRange.Length;ii++){
 				if(!affectInRange[ii].name.Equals("Ground") && !affectInRange[ii].name.Contains("Marker")){
 					GameObject.Destroy(affectInRange[ii].gameObject);
