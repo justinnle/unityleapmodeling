@@ -9,7 +9,10 @@ public class TrackingScript : MonoBehaviour {
 	Hand leftHand;
 	Hand rightHand;
 	bool panEnabled;
+	bool rotateEnabled;
+	bool zoomEnabled;
 	public GUIText guiText;
+	public GameObject bangParticles;
 
 	public GameObject rightGroundMarker;
 	public GameObject leftGroundMarker;
@@ -17,6 +20,8 @@ public class TrackingScript : MonoBehaviour {
 	public Transform focalPoint;
 	Leap.Vector leftHandPrev;
 	Leap.Vector rightHandPrev;
+
+	bool thumbWasExtended;
 
 	Leap.Vector leftDirPrev;
 	Leap.Vector rightDirPrev;
@@ -37,11 +42,14 @@ public class TrackingScript : MonoBehaviour {
 		rightHand = new Hand ();
 		controller = new Controller();
 		panEnabled = true;
+		rotateEnabled = true;
+		zoomEnabled = true;
 		controller.EnableGesture (Gesture.GestureType.TYPECIRCLE);
 		controller.EnableGesture (Gesture.GestureType.TYPESWIPE);
 		controller.EnableGesture (Gesture.GestureType.TYPEKEYTAP);
 		controller.EnableGesture (Gesture.GestureType.TYPESCREENTAP);
 		locked = false;
+		thumbWasExtended = true;
 		guiText.text = "";
 	}
 	
@@ -73,9 +81,9 @@ public class TrackingScript : MonoBehaviour {
 				rightGroundMarker.transform.position = rhInfo.point;
 		}
 		*/
-		if (!rightFistForward() && !leftFistForward ()) {
-			panEnabled = true;
-		}
+		panEnabled = true;
+		zoomEnabled = true;
+		rotateEnabled = true;
 		//pan
 		if (rightHandForward() && leftHandForward () && handList.Count==2 && panEnabled) {//both hands facing forward
 			guiText.text = "Pan Mode";
@@ -84,8 +92,10 @@ public class TrackingScript : MonoBehaviour {
 			transform.position += (rightHandPrev.y - rightHand.PalmPosition.y) * transform.up * Mathf.Abs(rightHand.PalmVelocity.y) * Time.deltaTime * 1/5;
 		}
 		//rotate
-		if (rightFistForward () && leftHandForward () && handList.Count==2) {
+		if (rightFistForward () && leftHandForward () && handList.Count==2 && rotateEnabled) {
 			guiText.text = "Rotate Mode";
+			panEnabled = false;
+			zoomEnabled = false;
 			toggleGestures(false);
 			transform.position += (leftHandPrev.x - leftHand.PalmPosition.x) * transform.right * Mathf.Abs(leftHand.PalmVelocity.x) * Time.deltaTime * 1/5;
 			transform.LookAt(focalPoint);
@@ -93,18 +103,23 @@ public class TrackingScript : MonoBehaviour {
 			transform.LookAt(focalPoint);
 		}
 		//zoom
-		if (rightHandForward () && leftFistForward () && handList.Count==2) {
+		if (rightHandForward () && leftFistForward () && handList.Count==2 && zoomEnabled) {
 			guiText.text = "Zoom Mode";
 			toggleGestures(false);
 			transform.position += (rightHandPrev.x - rightHand.PalmPosition.x) * transform.forward * Mathf.Abs(rightHand.PalmVelocity.x) * Time.deltaTime * 1/5;
 		}
+		//create/destroy
 		if (leftPoint () != null){
-			guiText.text = "Create Mode";
+			guiText.text = "Create/Destroy Mode";
+			panEnabled = false;
+			rotateEnabled = false;
+			zoomEnabled = false;
 			if (rightPinch ()) {//vert box creation
 					panEnabled = false;
 					locked = true;
 					GameObject newCube = GameObject.CreatePrimitive (PrimitiveType.Cube);
 					newCube.transform.position = leftTracker;
+					newCube.AddComponent<Collider>();
 					newCube.transform.parent = createdObjects.transform;
 
 				if(rightHandPrev.y < rightHand.PalmPosition.y){
@@ -114,7 +129,19 @@ public class TrackingScript : MonoBehaviour {
 					newCube.transform.position += -newCube.transform.up * Time.deltaTime * rightHand.PalmVelocity.y * 1/5;
 				}
 			} else {
-					locked = false;
+				locked = false;
+				Finger thumb = null;
+				foreach(Finger f in leftHand.Fingers){
+					if(f.Type() == Finger.FingerType.TYPE_THUMB){
+						thumb = f;
+					}
+				}//eoforeach
+				if(thumbWasExtended){
+					if(!thumb.IsExtended){
+						bang();
+					}
+				}
+
 			}
 		}
 
@@ -145,6 +172,18 @@ public class TrackingScript : MonoBehaviour {
 		leftDirPrev = leftHand.Direction;
 		rightDirPrev = rightHand.Direction;
 	}//eo update
+
+	void bang(){
+		if(rightFistForward()){
+			GameObject.Instantiate (bangParticles, leftTracker+transform.up*1.2f, Quaternion.LookRotation (transform.forward));
+			Collider[] affectInRange = Physics.OverlapSphere (leftTracker, 3.0f);
+			for(int ii=0;ii<affectInRange.Length;ii++){
+				if(!affectInRange[ii].name.Equals("Ground") && !affectInRange[ii].name.Contains("Marker")){
+					GameObject.Destroy(affectInRange[ii].gameObject);
+				}
+			}
+		}
+	}//eobang
 
 	void toggleGestures(bool enabled){
 		controller.EnableGesture (Gesture.GestureType.TYPECIRCLE,enabled);
