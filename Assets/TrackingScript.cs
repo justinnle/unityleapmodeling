@@ -9,6 +9,7 @@ public class TrackingScript : MonoBehaviour {
 	Hand leftHand;
 	Hand rightHand;
 	bool panEnabled;
+	public GUIText guiText;
 
 	public GameObject rightGroundMarker;
 	public GameObject leftGroundMarker;
@@ -41,6 +42,7 @@ public class TrackingScript : MonoBehaviour {
 		controller.EnableGesture (Gesture.GestureType.TYPEKEYTAP);
 		controller.EnableGesture (Gesture.GestureType.TYPESCREENTAP);
 		locked = false;
+		guiText.text = "";
 	}
 	
 	void Update ()
@@ -50,6 +52,7 @@ public class TrackingScript : MonoBehaviour {
 		handList = frame.Hands;
 		leftHand = handList.Leftmost;
 		rightHand = handList.Rightmost;
+		toggleGestures (true);
 		if (rightPoint () != null && !locked) {
 						rightTracker = rightMark ();
 				}
@@ -75,12 +78,14 @@ public class TrackingScript : MonoBehaviour {
 		}
 		//pan
 		if (rightHandForward() && leftHandForward () && handList.Count==2 && panEnabled) {//both hands facing forward
+			guiText.text = "Pan Mode";
 			toggleGestures(false);
 			transform.position += (rightHandPrev.x - rightHand.PalmPosition.x) * transform.right * Mathf.Abs(rightHand.PalmVelocity.x) * Time.deltaTime * 1/5;
 			transform.position += (rightHandPrev.y - rightHand.PalmPosition.y) * transform.up * Mathf.Abs(rightHand.PalmVelocity.y) * Time.deltaTime * 1/5;
 		}
-		//rotateleft
+		//rotate
 		if (rightFistForward () && leftHandForward () && handList.Count==2) {
+			guiText.text = "Rotate Mode";
 			toggleGestures(false);
 			transform.position += (leftHandPrev.x - leftHand.PalmPosition.x) * transform.right * Mathf.Abs(leftHand.PalmVelocity.x) * Time.deltaTime * 1/5;
 			transform.LookAt(focalPoint);
@@ -89,10 +94,12 @@ public class TrackingScript : MonoBehaviour {
 		}
 		//zoom
 		if (rightHandForward () && leftFistForward () && handList.Count==2) {
+			guiText.text = "Zoom Mode";
 			toggleGestures(false);
 			transform.position += (rightHandPrev.x - rightHand.PalmPosition.x) * transform.forward * Mathf.Abs(rightHand.PalmVelocity.x) * Time.deltaTime * 1/5;
 		}
 		if (leftPoint () != null){
+			guiText.text = "Create Mode";
 			if (rightPinch ()) {//vert box creation
 					panEnabled = false;
 					locked = true;
@@ -104,7 +111,6 @@ public class TrackingScript : MonoBehaviour {
 					newCube.transform.localScale += newCube.transform.up * Time.deltaTime * rightHand.PalmVelocity.y * 1/5;
 					newCube.transform.position += newCube.transform.up * Time.deltaTime * rightHand.PalmVelocity.y * 1/5;
 				}else{
-					newCube.transform.localScale += -newCube.transform.up * Time.deltaTime * rightHand.PalmVelocity.y * 1/5;
 					newCube.transform.position += -newCube.transform.up * Time.deltaTime * rightHand.PalmVelocity.y * 1/5;
 				}
 			} else {
@@ -115,35 +121,24 @@ public class TrackingScript : MonoBehaviour {
 		foreach (Gesture g in frame.Gestures()) {
 			//print (g.Type.ToString());
 			if (leftFistForward() && g.Type == Gesture.GestureType.TYPECIRCLE && g.State == Gesture.GestureState.STATE_STOP) {
-					print ("circlestop");
 					GameObject newSphere = GameObject.CreatePrimitive (PrimitiveType.Sphere);
 					newSphere.transform.position = new Vector3 (Random.Range (4, 7), Random.Range (4, 5), Random.Range (0, 1));
 					newSphere.AddComponent<Rigidbody> ();
 					newSphere.transform.parent = createdObjects.transform;
-			}/*
+			}
 			if (g.Type == Gesture.GestureType.TYPESWIPE) {
-				Leap.Vector startPos = new Vector (0, 0, 0);
-				Leap.Vector endPos = new Vector (0, 0, 0);
-				if (g.State == Gesture.GestureState.STATE_START) {;
-					startPos = rightHand.PalmPosition;
-					print (startPos);
+				print("swipe");
+				if(leftPoint () != null){
+					RaycastHit rhInfo = new RaycastHit ();
+					Ray shootRay = new Ray (vectorConvert(rightPoint ().TipPosition),
+					                        vectorConvert(rightPoint ().Direction));
+					if (Physics.Raycast (shootRay, out rhInfo, 400.0f)) {
+						GameObject.Destroy(rhInfo.collider);
+					}
 				}
-				if (g.State == Gesture.GestureState.STATE_STOP) {
-					endPos = rightHand.PalmPosition;
-				char alignment = (Mathf.Abs(startPos.x-endPos.x)>Mathf.Abs(startPos.y-endPos.y))? 'h' : 'v';
-				string direction = "";
-				if(alignment == 'h'){
-					direction = (startPos.x-endPos.x<0) ? "left" : "right";
-				}
-				else{
-					direction = (startPos.y-endPos.y<0) ? "down" : "up";
 				}
 
-				print (direction);
-				}
-			}//eoswipe
-			*/
-		}
+			}
 		//movement
 		leftHandPrev = leftHand.PalmPosition;
 		rightHandPrev = rightHand.PalmPosition;
