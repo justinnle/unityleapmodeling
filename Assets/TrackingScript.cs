@@ -145,7 +145,8 @@ public class TrackingScript : MonoBehaviour {
 				}
 			}
 		}//eoleftpoint()
-			if (rightPoint () != null){
+
+		if (rightPoint () != null){
 				guiText.text = "Create/Destroy Mode";
 				panEnabled = false;
 				rotateEnabled = false;
@@ -165,13 +166,13 @@ public class TrackingScript : MonoBehaviour {
 				} else {
 					locked = false;
 				}
-			}
+		}
 		
 
 		foreach (Gesture g in frame.Gestures()) {
 			//print (g.Type.ToString());
 			if (leftFistForward() && g.Type == Gesture.GestureType.TYPECIRCLE && g.State == Gesture.GestureState.STATE_STOP) {
-					GameObject newSphere = GameObject.CreatePrimitive (PrimitiveType.Sphere);
+				GameObject newSphere = GameObject.CreatePrimitive (PrimitiveType.Sphere);
 					newSphere.transform.position = new Vector3 (Random.Range (4, 7), Random.Range (4, 5), Random.Range (0, 1));
 					newSphere.AddComponent<Rigidbody> ();
 					newSphere.transform.parent = createdObjects.transform;
@@ -221,6 +222,7 @@ public class TrackingScript : MonoBehaviour {
 		controller.EnableGesture (Gesture.GestureType.TYPESCREENTAP, enabled);
 
 	}
+
 	bool rightHandForward(){
 		return rightHand.Direction.z < -.30 && rightHand.Direction.z > -.80;
 		}//eorighthandforward
